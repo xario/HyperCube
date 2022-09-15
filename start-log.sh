@@ -10,5 +10,7 @@ bash -c "docker run --rm --name hyperlog -i --privileged hyper:latest bash /root
 until docker ps | grep hyperlog -q; do
   sleep 1
 done
-
+if [ -f /home/$USER/cube.log ]; then
+  chown $USER:$USER /home/$USER/cube.log
+fi
 docker logs --timestamps --follow hyperlog >> /home/$USER/cube.log

@@ -9,7 +9,7 @@ fi
 echo "Staring monitoring of $PORT..."
 touch /tmp/out.log
 screen -dm bash -c "exec bash -c \"arduino-cli monitor --port $PORT -c baudrate=115200\" >> /tmp/out.log"
-tail -f /tmp/out.log &
+tail -f /tmp/out.log -n 10000 &
 until pgrep arduino-cli > /dev/null; do
   sleep 1
 done

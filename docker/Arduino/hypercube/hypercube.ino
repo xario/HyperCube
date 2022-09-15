@@ -380,14 +380,24 @@ void startTimers() {
     strcpy(clockifyTimers[j].sideId, currentRfid);
     startTime.toCharArray(clockifyTimers[j].startTime, 25);
     strcpy(clockifyTimers[j].endTime, "");
+    String workspaceId = jsonExtract(config, "workspaceId");
+    String projectId = jsonExtract(config, "projectId");
+    String taskId = jsonExtract(config, "taskId");
+    String description = jsonExtract(config, "taskDesc");
+    #ifdef DEBUG
+    Serial.print("JSON apiKey: "); Serial.println(apiKey);
+    Serial.print("JSON workspaceId: "); Serial.println(workspaceId);
+    Serial.print("JSON projectId: "); Serial.println(projectId);
+    Serial.print("JSON taskId: "); Serial.println(taskId);
+    Serial.print("JSON description: "); Serial.println(description);
+    #endif
     strcpy(clockifyTimers[j].apiKey, apiKey.c_str());
-    strcpy(clockifyTimers[j].workspaceId, jsonExtract(config, "workspaceId").c_str());
-    strcpy(clockifyTimers[j].projectId, jsonExtract(config, "projectId").c_str());
-    strcpy(clockifyTimers[j].taskId, jsonExtract(config, "taskId").c_str());
-    strcpy(clockifyTimers[j].description, jsonExtract(config, "taskDesc").c_str());
+    strcpy(clockifyTimers[j].workspaceId, workspaceId.c_str());
+    strcpy(clockifyTimers[j].projectId, projectId.c_str());
+    strcpy(clockifyTimers[j].taskId, taskId.c_str());
+    strcpy(clockifyTimers[j].description, description.c_str());
     clockifyTimers[j].state = TIMER_PENDING;
     clockifyTimers[j].desiredState = TIMER_STARTING;
-
     printTimer(j);
     
     changes = true;

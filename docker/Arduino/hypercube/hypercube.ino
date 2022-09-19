@@ -1,4 +1,4 @@
-#ifndef AUTOMATED
+#ifndef CUBE_NAME
 #define CUBE_NAME "hypercube9"
 #endif
 

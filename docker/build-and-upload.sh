@@ -1,6 +1,6 @@
 #!/bin/bash
 trap 'echo Bye!; exit' INT
-set -e
+set -ex
 PORT=$(arduino-cli board list | tail -n2 | grep tty | cut -d" " -f1)
 if ! [[ "$PORT" =~ /dev/* ]]; then
   echo "No HyperCube found. Make sure to plug in the Cube before using the tool"
@@ -22,9 +22,9 @@ python /root/.arduino15/packages/esp32/tools/esptool_py/3.0.0/esptool.py -b 9216
 echo "####### Exporting configuration from backup #######"
 python /root/dump/dump.py $DUMP_BIN $DATA_DIR
 NAME_PATH="$DATA_DIR/name"
-if [ -f "$NAME_PATH" ]; then 
+if [ -f "$NAME_PATH" ]; then
   NAME=`cat $NAME_PATH`
-else 
+else
   echo "Enter the number of the HyperCube to be updated:"
   read CUBE_NUMBER
   until [[ $CUBE_NUMBER =~ ^[1-9]$ ]] ; do
@@ -44,7 +44,7 @@ cp -v $REACT_BUILD_DIR/index.html $DATA_DIR/
 
 cd /root/Arduino/
 echo "################ Compiling code... ################"
-arduino-cli compile -b esp32:esp32:d1_mini32 --build-property compiler.cpp.extra_flags="-DAUTOMATED" --build-property compiler.cpp.extra_flags="-DNAME=\"${NAME}\"" -e hypercube
+arduino-cli compile -b esp32:esp32:d1_mini32 --build-property compiler.cpp.extra_flags="-DAUTOMATED" --build-property compiler.cpp.extra_flags="-DCUBE_NAME=\"${NAME}\"" -e hypercube
 echo "########### Uploading compiled code... ############"
 arduino-cli upload --port $PORT --fqbn esp32:esp32:d1_mini32 hypercube
 

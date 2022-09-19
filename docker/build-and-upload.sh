@@ -1,6 +1,6 @@
 #!/bin/bash
 trap 'echo Bye!; exit' INT
-set -ex
+set -e
 PORT=$(arduino-cli board list | tail -n2 | grep tty | cut -d" " -f1)
 if ! [[ "$PORT" =~ /dev/* ]]; then
   echo "No HyperCube found. Make sure to plug in the Cube before using the tool"

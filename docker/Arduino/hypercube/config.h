@@ -820,10 +820,15 @@ void initConfig() {
       Serial.println(json);
       #endif
       sides = jsonExtract(json, "sides");
-
       #ifdef DEBUG
       Serial.println("Sides: ");
       Serial.println(sides);
+      #endif
+      String apiKeys = jsonExtract(json, "apiKeys");
+      clockifyApiKeys = jsonExtract(apiKeys, "clockify");
+      #ifdef DEBUG
+      Serial.println("Clockify API keys: ");
+      Serial.println(clockifyApiKeys);
       #endif
       request->send(200, "text/json", "{\"success\":true}");
     }
@@ -898,6 +903,12 @@ void initConfig() {
     #ifdef DEBUG
     Serial.println("Sides: ");
     Serial.println(sides);
+    #endif
+    String apiKeys = jsonExtract(jsonString, "apiKeys");
+    clockifyApiKeys = jsonExtract(apiKeys, "clockify");
+    #ifdef DEBUG
+    Serial.println("Clockify API keys: ");
+    Serial.println(clockifyApiKeys);
     #endif
   } else {
     #ifdef DEBUG

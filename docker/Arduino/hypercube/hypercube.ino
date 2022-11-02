@@ -1,5 +1,5 @@
 #ifndef AUTOMATED
-#define CUBE_NAME "hypercube9"
+#define CUBE_NAME "hypercube3"
 #endif
 
 String CUBE_PASS = "";
@@ -26,6 +26,7 @@ bool Ticker::active() {
 #include "clockify_timer.h"
 
 String sides = "";
+String clockifyApiKeys = "";
 
 int prevHeapSpace = 0;
 
@@ -44,7 +45,7 @@ bool wifiReboot = false;
 uint32_t idleFromTime = 0;
 unsigned long lastPersistedTime = 0;
 
-int start = 0;
+unsigned int start = 0;
 int64_t startOffset;
 
 char currentRfid[17] = "";
@@ -163,7 +164,11 @@ void stopTimers(bool force = false) {
     stopTime.toCharArray(clockifyTimers[i].endTime, 25);
     // If the cube was removed before the reconiliation loop had a chance to send 
     // the request to Clockify, we just set the state to stopped, as it was never started.
-    if (clockifyTimers[i].state == TIMER_PENDING) {
+    if (clockifyTimers[i].state == TIMER_CHECKING || clockifyTimers[i].state == TIMER_PENDING) {
+      clockifyTimers[i].state = TIMER_STOPPED;
+    }
+
+    if (strlen(clockifyTimers[i].id) == 0) {
       clockifyTimers[i].state = TIMER_STOPPED;
     }
 
@@ -318,7 +323,7 @@ void startTimers() {
           continue;  
         }
 
-        if (state == TIMER_PENDING && strcmp(clockifyTimers[j].apiKey, apiKey.c_str()) == 0) {
+        if ((state == TIMER_PENDING || state == TIMER_CHECKING) && strcmp(clockifyTimers[j].apiKey, apiKey.c_str()) == 0) {
           #ifdef DEBUG
           Serial.println("Found existing timer with same API key in slot " + String(j) + ": ");
           printTimer(j);
@@ -396,7 +401,7 @@ void startTimers() {
     strcpy(clockifyTimers[j].projectId, projectId.c_str());
     strcpy(clockifyTimers[j].taskId, taskId.c_str());
     strcpy(clockifyTimers[j].description, description.c_str());
-    clockifyTimers[j].state = TIMER_PENDING;
+    clockifyTimers[j].state = TIMER_CHECKING;
     clockifyTimers[j].desiredState = TIMER_STARTING;
     printTimer(j);
     
@@ -440,6 +445,18 @@ void reconciliateTimers(void * parameter) {
   
     bool hadChanges = false;
     for(int i = 0; i < MAX_CLOCKIFY_TIMERS; i++) {
+      if (clockifyTimers[i].desiredState == TIMER_STARTING && clockifyTimers[i].state == TIMER_CHECKING) {
+        if (!checkTimer(i)) {
+          apiFailures++;
+          #ifdef DEBUG
+          Serial.print("Reconciliation: Check timer failed. Fail count: "); Serial.println(apiFailures);
+          #endif
+        } else {
+          apiFailures = 0;
+          break;
+        }
+      }
+      
       if (clockifyTimers[i].desiredState == TIMER_STARTING && clockifyTimers[i].state == TIMER_PENDING) {
         int elapsed = timeClient.getEpochTime() - clockifyTimers[i].start;
         if (elapsed >= 3) {
@@ -510,6 +527,10 @@ void getElapsedTime(char* out) {
 
 bool isPending() {
   for(int j = 0; j < MAX_CLOCKIFY_TIMERS; j++) {
+    if (clockifyTimers[j].state == TIMER_CHECKING) {
+      return true;
+    }
+
     if (clockifyTimers[j].state == TIMER_PENDING) {
       return true;
     }
@@ -664,6 +685,4 @@ void loop() {
     booting = false;
     handleLogic();
   }
-
-  delay(100);
 }

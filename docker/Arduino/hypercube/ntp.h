@@ -11,11 +11,14 @@ unsigned long getEpochTime() {
   return timeClient.getEpochTime();
 }
 
-unsigned long secondsSince(String isoTime) {
+unsigned long isoToUnixTime(String isoTime) {
   struct tm tm = {0};
-  
   strptime(isoTime.c_str(), "%Y-%m-%dT%H:%M:%S.000S", &tm);
-  return getEpochTime() - mktime(&tm);
+  return mktime(&tm);
+}
+
+unsigned long secondsSince(String isoTime) {
+  return getEpochTime() - isoToUnixTime(isoTime);
 }
 
 String getISO8601Time(unsigned long timestamp = 0) {

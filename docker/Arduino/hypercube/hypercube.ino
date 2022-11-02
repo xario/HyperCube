@@ -1,5 +1,5 @@
-#ifndef AUTOMATED
-#define CUBE_NAME "hypercube3"
+#ifndef CUBE_NAME
+#define CUBE_NAME "hypercube9"
 #endif
 
 String CUBE_PASS = "";

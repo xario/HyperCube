@@ -44,7 +44,7 @@ cp -v $REACT_BUILD_DIR/index.html $DATA_DIR/
 
 cd /root/Arduino/
 echo "################ Compiling code... ################"
-arduino-cli compile -b esp32:esp32:d1_mini32 --build-property compiler.cpp.extra_flags="-DAUTOMATED" --build-property compiler.cpp.extra_flags="-DCUBE_NAME=\"${NAME}\"" -e hypercube
+arduino-cli compile -b esp32:esp32:d1_mini32 --build-property compiler.cpp.extra_flags="-DCUBE_NAME=\"${NAME}\"" -e hypercube
 echo "########### Uploading compiled code... ############"
 arduino-cli upload --port $PORT --fqbn esp32:esp32:d1_mini32 hypercube
 

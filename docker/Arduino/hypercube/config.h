@@ -826,6 +826,7 @@ void initConfig() {
       #endif
       String apiKeys = jsonExtract(json, "apiKeys");
       clockifyApiKeys = jsonExtract(apiKeys, "clockify");
+      updateApiUserIds();
       #ifdef DEBUG
       Serial.println("Clockify API keys: ");
       Serial.println(clockifyApiKeys);
@@ -882,14 +883,6 @@ void initConfig() {
   #ifdef DEBUG
   Serial.println("");
   #endif
-  
-  struct tm timeinfo;
-  gmtime_r(&now, &timeinfo);
-  
-  #ifdef DEBUG
-  Serial.print("Current time: ");
-  Serial.print(asctime(&timeinfo));
-  #endif
 
   File jsonFile = FileFS.open("/data.json", "r");
   if (jsonFile) {
@@ -906,6 +899,7 @@ void initConfig() {
     #endif
     String apiKeys = jsonExtract(jsonString, "apiKeys");
     clockifyApiKeys = jsonExtract(apiKeys, "clockify");
+    updateApiUserIds();
     #ifdef DEBUG
     Serial.println("Clockify API keys: ");
     Serial.println(clockifyApiKeys);

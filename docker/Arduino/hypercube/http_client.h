@@ -1,27 +1,29 @@
 #include <CStringBuilder.h>
 #include <WiFiClientSecure.h>
+#include <HttpDateTime.h>					  // https://github.com/DIYDave
 
 const char* clockify_host = "api.clockify.me";
 int clockify_port = 443;
-String userIds[10] = {"", "", "", "", "", "", "", "", "", ""};
 
-int getAPIKeyIndex(int i) {
-  #ifdef DEBUG
-  Serial.println("Trying to get API key index...");
-  Serial.print("Current API key: ");
-  Serial.println(clockifyTimers[i].apiKey);
-  #endif
-  String apiKey = "";
+// Time settings
+const int TIMEZONE = 0; // +/- Timezone offset to GMT. e.g. 1 for MEZ, 0 for GMT
+const bool USEDAYLIGHT = 0;
+
+HttpDateTime HttpDateTime(TIMEZONE, USEDAYLIGHT); 
+
+void parseDateTime(String header) {           
+  stHttpDT t;
+  if (HttpDateTime.getDateTime(header, t)) {
+    rtc.setTime(t.second, t.minute, t.hour, t.day, t.month, t.year);
+  }
+}
+
+int getAPIKeyIndex(String apiKey) {
+  String configApiKey = "";
   for (int j = 0; j < 10; j++) {
-    apiKey = jsonIndexList(clockifyApiKeys, j);
-    apiKey = apiKey.substring(1, apiKey.length() - 1);
-    #ifdef DEBUG
-    Serial.print("API key number ");
-    Serial.print(j);
-    Serial.print(": ");
-    Serial.println(apiKey);
-    #endif
-    if (strcmp(apiKey.c_str(), clockifyTimers[i].apiKey) == 0) {
+    configApiKey = jsonIndexList(clockifyApiKeys, j);
+    configApiKey = configApiKey.substring(1, configApiKey.length() - 1);
+    if (configApiKey == apiKey) {
       return j;
     }
   }
@@ -29,13 +31,15 @@ int getAPIKeyIndex(int i) {
   return -1;
 }
 
-bool fetchUserId(int apiKeyIndex, int i) {
+bool fetchUserId(String apiKey) {
   #ifdef DEBUG
   Serial.println("Trying to fetch userId...");
   #endif
+
+  int apiKeyIndex = getAPIKeyIndex(apiKey);
   if (apiKeyIndex < 0) {
     #ifdef DEBUG
-    Serial.println("API key not found in list. Failed to fetch userId");
+    Serial.println("Failed to find API key index");
     #endif
     return false;
   }
@@ -54,19 +58,14 @@ bool fetchUserId(int apiKeyIndex, int i) {
   client.print("Host: ");
   client.println(clockify_host);
   client.print("X-Api-Key: ");
-  client.println(clockifyTimers[i].apiKey);
+  client.println(apiKey);
   client.println("User-Agent: ESP32");
   client.println("Connection: close");
   client.println();
 
   yield();
-  String line = client.readStringUntil('\n');
-  String returnCode = line.substring(9, 12);
-  #ifdef DEBUG
-  Serial.println("Return code: " + returnCode);
-  #endif
-
-  yield();
+  String line = "";
+  String returnCode = "not found";
   while (client.connected()) {
     line = client.readStringUntil('\n');
     if (line == "\r") {
@@ -75,7 +74,17 @@ bool fetchUserId(int apiKeyIndex, int i) {
       #endif
       break;
     }
+
+    if (line.indexOf("HTTP/1.1 ") == 0) {
+      returnCode = line.substring(9, 12);
+    }
+  
+    parseDateTime(line);
   }
+
+  #ifdef DEBUG
+  Serial.println("Return code: " + returnCode);
+  #endif
 
   yield();
   if (returnCode != "200") {
@@ -95,16 +104,33 @@ bool fetchUserId(int apiKeyIndex, int i) {
   #ifdef DEBUG
   Serial.println("UserId found: " + userId);
   #endif
-  userIds[apiKeyIndex] = userId;
+  
+  clockifyUserIds[apiKeyIndex] = userId;
   client.stop();
   return true;
 }
 
+void updateApiUserIds() {
+  String apiKey = "";
+  String lastKey = "";
+  for (int j = 0; j < 10; j++) {
+    apiKey = jsonIndexList(clockifyApiKeys, j);
+    apiKey = apiKey.substring(1, apiKey.length() - 1);
+    if (lastKey == apiKey) {
+      break;
+    }
+
+    lastKey = apiKey;
+    fetchUserId(apiKey);
+  }
+}
+
 String getUserId(int i) {
+  String apiKey = String(clockifyTimers[i].apiKey);
   #ifdef DEBUG
   Serial.println("Getting user id");
   #endif
-  int apiKeyIndex = getAPIKeyIndex(i);
+  int apiKeyIndex = getAPIKeyIndex(apiKey);
   if (apiKeyIndex < 0) {
     #ifdef DEBUG
     Serial.println("API key not found, cannot find user!");
@@ -112,14 +138,14 @@ String getUserId(int i) {
     return "";
   }
 
-  if (userIds[apiKeyIndex].length() == 0 && !fetchUserId(apiKeyIndex, i)) { 
+  if (clockifyUserIds[apiKeyIndex].length() == 0 && !fetchUserId(apiKey)) { 
     #ifdef DEBUG
     Serial.println("Could not get userId");
     #endif
     return "";
   }
 
-  return userIds[apiKeyIndex];
+  return clockifyUserIds[apiKeyIndex];
 }
 
 bool checkTimer(int i) {
@@ -157,22 +183,27 @@ bool checkTimer(int i) {
   client.println();
 
   yield();
-  String line = client.readStringUntil('\n');
-  String returnCode = line.substring(9, 12);
-  #ifdef DEBUG
-  Serial.println("Return code: " + returnCode);
-  #endif
-
-  yield();
+  String line = "";
+  String returnCode = "not found";
   while (client.connected()) {
-    String line = client.readStringUntil('\n');
+    line = client.readStringUntil('\n');
     if (line == "\r") {
       #ifdef DEBUG
       Serial.println("Headers received");
       #endif
       break;
     }
+
+    if (line.indexOf("HTTP/1.1 ") == 0) {
+      returnCode = line.substring(9, 12);
+    }
+  
+    parseDateTime(line);
   }
+
+  #ifdef DEBUG
+  Serial.println("Return code: " + returnCode);
+  #endif
 
   yield();
   if (returnCode != "200") {
@@ -309,22 +340,28 @@ bool startTimer(int i) {
   yield();
   updateTimerState(i, TIMER_START_SENT);
 
-  String line = client.readStringUntil('\n');
-  String returnCode = line.substring(9, 12);
-  #ifdef DEBUG
-  Serial.println("Return code: " + returnCode);
-  #endif
-
   yield();
+  String line = "";
+  String returnCode = "not found";
   while (client.connected()) {
-    String line = client.readStringUntil('\n');
+    line = client.readStringUntil('\n');
     if (line == "\r") {
       #ifdef DEBUG
       Serial.println("Headers received");
       #endif
       break;
     }
+
+    if (line.indexOf("HTTP/1.1 ") == 0) {
+      returnCode = line.substring(9, 12);
+    }
+  
+    parseDateTime(line);
   }
+
+  #ifdef DEBUG
+  Serial.println("Return code: " + returnCode);
+  #endif
 
   yield();
   if (returnCode != "201") {
@@ -423,12 +460,31 @@ bool stopTimer(int i) {
   #ifdef DEBUG
   Serial.println("Request sent");
   #endif
-  String line = client.readStringUntil('\n');
+  String line = "";
+  String returnCode = "not found";
+  while (client.connected()) {
+    line = client.readStringUntil('\n');
+    if (line == "\r") {
+      #ifdef DEBUG
+      Serial.println("Headers received");
+      #endif
+      break;
+    }
+
+    if (line.indexOf("HTTP/1.1 ") == 0) {
+      returnCode = line.substring(9, 12);
+    }
+  
+    parseDateTime(line);
+  } 
+  
+  line = client.readStringUntil('\n');
   client.stop();
-  String returnCode = line.substring(9, 12);
+
   #ifdef DEBUG
   Serial.println("Return code: " + returnCode);
   #endif
+
   yield();
 
   if (returnCode != "200") {

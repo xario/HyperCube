@@ -24,9 +24,10 @@ RUN git clone --depth 1 https://github.com/me-no-dev/ESPAsyncWebServer.git /root
 RUN git clone --depth 1 --branch 0.1.3 https://github.com/xario/jsonlib /root/Arduino/libraries/jsonlib
 RUN git clone --depth 1 --branch 1.0.6 https://github.com/lorol/LITTLEFS.git /root/Arduino/libraries/LittleFS_esp32
 RUN git clone --depth 1 --branch 1.4.4 https://github.com/miguelbalboa/rfid.git /root/Arduino/libraries/MFRC522
-RUN git clone --depth 1 --branch 3.2.0 https://github.com/arduino-libraries/NTPClient.git /root/Arduino/libraries/NTPClient
 RUN git clone --depth 1 --branch 1.2.0 https://github.com/jandrassy/StreamLib /root/Arduino/libraries/StreamLib
 RUN git clone --depth 1 --branch 2.3.5 https://github.com/Links2004/arduinoWebSockets.git /root/Arduino/libraries/WebSockets
+RUN git clone --depth 1 --branch v2.0.0 https://github.com/fbiego/ESP32Time.git /root/Arduino/libraries/ESP32Time-main
+RUN git clone --depth 1 https://github.com/DIYDave/HTTP-DateTime.git /root/Arduino/libraries/HTTP-DateTime-master
 
 RUN apk add --update nodejs yarn
 COPY React/*.json ./root/React/*.lock /root/React/

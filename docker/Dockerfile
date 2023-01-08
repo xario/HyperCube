@@ -29,7 +29,7 @@ RUN git clone --depth 1 --branch 2.3.5 https://github.com/Links2004/arduinoWebSo
 RUN git clone --depth 1 --branch v2.0.0 https://github.com/fbiego/ESP32Time.git /root/Arduino/libraries/ESP32Time-main
 RUN git clone --depth 1 https://github.com/DIYDave/HTTP-DateTime.git /root/Arduino/libraries/HTTP-DateTime-master
 
-RUN apk add --update nodejs yarn
+RUN apk add --update nodejs-current yarn
 COPY React/*.json ./root/React/*.lock /root/React/
 ENV PATH /root/React/node_modules/.bin:$PATH
 WORKDIR /root/React/

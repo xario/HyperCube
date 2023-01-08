@@ -51,6 +51,12 @@ RUN chmod +x /root/build-and-upload.sh
 COPY monitor.sh /root/monitor.sh
 RUN chmod +x /root/monitor.sh
 
+COPY backup.sh /root/backup.sh
+RUN chmod +x /root/backup.sh
+
+COPY restore.sh /root/restore.sh
+RUN chmod +x /root/restore.sh
+
 WORKDIR /root
 
 CMD ["bash", "/root/build-and-upload.sh"]

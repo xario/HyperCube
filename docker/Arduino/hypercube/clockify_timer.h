@@ -1,4 +1,4 @@
-enum TimerState {TIMER_STOPPED, TIMER_PENDING, TIMER_STARTING, TIMER_START_SENT, TIMER_RUNNING, TIMER_STOPPING, TIMER_STOP_SENT};
+enum TimerState {TIMER_STOPPED, TIMER_CHECKING, TIMER_PENDING, TIMER_STARTING, TIMER_START_SENT, TIMER_RUNNING, TIMER_STOPPING, TIMER_STOP_SENT};
 
 typedef struct  {
     char id[25];
@@ -21,6 +21,9 @@ String stateToString(TimerState state) {
   switch (state) {
     case TIMER_STOPPED: {
       return "TIMER_STOPPED";
+    }
+    case TIMER_CHECKING: {
+      return "TIMER_CHECKING";
     }
     case TIMER_PENDING: {
       return "TIMER_PENDING";
@@ -123,7 +126,6 @@ void updateTimerState(int timerId, TimerState newState) {
   #endif
   clockifyTimers[timerId].state = newState;
   if (newState == TIMER_RUNNING) {
-    
     for(int i = 0; i < MAX_CLOCKIFY_TIMERS; i++) {
       if (i == timerId) {
         continue;

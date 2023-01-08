@@ -131,7 +131,7 @@ void refreshDisplay() {
     updateText = true;
   }
 
-  int color = timeClient.getHours() % 2 != 0;
+  int color = rtc.getHour(true) % 2 != 0;
   bool updateColor = lastColor != color;
   
   lastColor = color;

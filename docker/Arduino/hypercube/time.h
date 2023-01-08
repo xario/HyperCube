@@ -1,25 +1,27 @@
-#include <NTPClient.h>
-#include <WiFiUdp.h>
+#include <ESP32Time.h>
+
+ESP32Time rtc(0);
 
 #define LEAP_YEAR(Y)     ( (Y>0) && !(Y%4) && ( (Y%100) || !(Y%400) ) )
 
 const long utcOffsetInSeconds = 0;
-WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds);
 
 unsigned long getEpochTime() {
-  return timeClient.getEpochTime();
+  return rtc.getEpoch();
+}
+
+unsigned long isoToUnixTime(String isoTime) {
+  struct tm tm = {0};
+  strptime(isoTime.c_str(), "%Y-%m-%dT%H:%M:%S.000S", &tm);
+  return mktime(&tm);
 }
 
 unsigned long secondsSince(String isoTime) {
-  struct tm tm = {0};
-  
-  strptime(isoTime.c_str(), "%Y-%m-%dT%H:%M:%S.000S", &tm);
-  return getEpochTime() - mktime(&tm);
+  return getEpochTime() - isoToUnixTime(isoTime);
 }
 
 String getISO8601Time(unsigned long timestamp = 0) {
-  unsigned long rawTime = timestamp > 0 ? timestamp : timeClient.getEpochTime();
+  unsigned long rawTime = timestamp > 0 ? timestamp : rtc.getEpoch();
   unsigned long rawDays = rawTime / 86400L; // in days
   unsigned long days = 0, year = 1970;
   uint8_t month;
@@ -54,16 +56,4 @@ String getISO8601Time(unsigned long timestamp = 0) {
   String monthStr = ++month < 10 ? "0" + String(month) : String(month); // jan is month 1  
   String dayStr = ++rawDays < 10 ? "0" + String(rawDays) : String(rawDays); // day of month  
   return String(year) + "-" + monthStr + "-" + dayStr + "T" + hoursStr + ":" + minuteStr + ":" + secondStr + ".000Z";
-}
-
-bool isNTPReady() {
-  return timeClient.getEpochTime() > 1636242315;
-}
-
-void initNtp() {
-  timeClient.begin();
-}
-
-void handleNTP() {
-  timeClient.update();
 }

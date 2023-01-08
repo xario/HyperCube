@@ -797,33 +797,40 @@ void initConfig() {
       return request->send(403);
     }
 
-    const char* operation = index == 0 ? FILE_WRITE : FILE_APPEND;
-    File file = FileFS.open("/data.json", operation);
+    static char buffer[10240];
+
+    //File file = FileFS.open("/data.json", operation);
     if(len) {
-      file.write(data,len);
+      memcpy(buffer + index, data, len);
+      //file.write(data,len);
     }
 
     #ifdef DEBUG
     Serial.println("Receiving data: ");
-    for(size_t i=0; i<len; i++){
+    for (size_t i = 0; i < len; i++) {
       Serial.write(data[i]);
     }
     #endif
 
-    file.close();
-    if(index + len == total){
-      file = FileFS.open("/data.json", "r");
-      String json = file.readString();
+    if (index + len == total) {
+      File file = FileFS.open("/data.json", FILE_WRITE);
+      file.write((uint8_t *)buffer, total);
       file.close();
       #ifdef DEBUG
       Serial.println("JSON: ");
-      Serial.println(json);
+      Serial.println(buffer);
       #endif
-      sides = jsonExtract(json, "sides");
-
+      sides = jsonExtract(buffer, "sides");
       #ifdef DEBUG
       Serial.println("Sides: ");
       Serial.println(sides);
+      #endif
+      String apiKeys = jsonExtract(buffer, "apiKeys");
+      clockifyApiKeys = jsonExtract(apiKeys, "clockify");
+      updateApiUserIds();
+      #ifdef DEBUG
+      Serial.println("Clockify API keys: ");
+      Serial.println(clockifyApiKeys);
       #endif
       request->send(200, "text/json", "{\"success\":true}");
     }
@@ -877,14 +884,6 @@ void initConfig() {
   #ifdef DEBUG
   Serial.println("");
   #endif
-  
-  struct tm timeinfo;
-  gmtime_r(&now, &timeinfo);
-  
-  #ifdef DEBUG
-  Serial.print("Current time: ");
-  Serial.print(asctime(&timeinfo));
-  #endif
 
   File jsonFile = FileFS.open("/data.json", "r");
   if (jsonFile) {
@@ -898,6 +897,13 @@ void initConfig() {
     #ifdef DEBUG
     Serial.println("Sides: ");
     Serial.println(sides);
+    #endif
+    String apiKeys = jsonExtract(jsonString, "apiKeys");
+    clockifyApiKeys = jsonExtract(apiKeys, "clockify");
+    updateApiUserIds();
+    #ifdef DEBUG
+    Serial.println("Clockify API keys: ");
+    Serial.println(clockifyApiKeys);
     #endif
   } else {
     #ifdef DEBUG

@@ -1,4 +1,4 @@
-#ifndef AUTOMATED
+#ifndef CUBE_NAME
 #define CUBE_NAME "hypercube3"
 #endif
 
@@ -26,6 +26,8 @@ bool Ticker::active() {
 #include "clockify_timer.h"
 
 String sides = "";
+String clockifyApiKeys = "";
+String clockifyUserIds[10] = {"", "", "", "", "", "", "", "", "", ""};
 
 int prevHeapSpace = 0;
 
@@ -44,7 +46,7 @@ bool wifiReboot = false;
 uint32_t idleFromTime = 0;
 unsigned long lastPersistedTime = 0;
 
-int start = 0;
+unsigned int start = 0;
 int64_t startOffset;
 
 char currentRfid[17] = "";
@@ -68,10 +70,10 @@ void updateTimerRunning() {
   timerRunning = running;
 }
 
-#include "ntp.h"
+#include "time.h"
 #include "display.h"
-#include "config.h"
 #include "http_client.h"
+#include "config.h"
 
 int rfidFailCount = 0;
 void checkRfidReset() {
@@ -163,7 +165,11 @@ void stopTimers(bool force = false) {
     stopTime.toCharArray(clockifyTimers[i].endTime, 25);
     // If the cube was removed before the reconiliation loop had a chance to send 
     // the request to Clockify, we just set the state to stopped, as it was never started.
-    if (clockifyTimers[i].state == TIMER_PENDING) {
+    if (clockifyTimers[i].state == TIMER_CHECKING || clockifyTimers[i].state == TIMER_PENDING) {
+      clockifyTimers[i].state = TIMER_STOPPED;
+    }
+
+    if (strlen(clockifyTimers[i].id) == 0) {
       clockifyTimers[i].state = TIMER_STOPPED;
     }
 
@@ -275,7 +281,7 @@ void startTimers() {
   #endif
 
   String startTime = getISO8601Time();
-  start = timeClient.getEpochTime();
+  start = rtc.getEpoch();
   startOffset = esp_timer_get_time();
   int j = 0;
   bool changes = false;
@@ -318,7 +324,7 @@ void startTimers() {
           continue;  
         }
 
-        if (state == TIMER_PENDING && strcmp(clockifyTimers[j].apiKey, apiKey.c_str()) == 0) {
+        if ((state == TIMER_PENDING || state == TIMER_CHECKING) && strcmp(clockifyTimers[j].apiKey, apiKey.c_str()) == 0) {
           #ifdef DEBUG
           Serial.println("Found existing timer with same API key in slot " + String(j) + ": ");
           printTimer(j);
@@ -396,7 +402,7 @@ void startTimers() {
     strcpy(clockifyTimers[j].projectId, projectId.c_str());
     strcpy(clockifyTimers[j].taskId, taskId.c_str());
     strcpy(clockifyTimers[j].description, description.c_str());
-    clockifyTimers[j].state = TIMER_PENDING;
+    clockifyTimers[j].state = TIMER_CHECKING;
     clockifyTimers[j].desiredState = TIMER_STARTING;
     printTimer(j);
     
@@ -440,16 +446,31 @@ void reconciliateTimers(void * parameter) {
   
     bool hadChanges = false;
     for(int i = 0; i < MAX_CLOCKIFY_TIMERS; i++) {
+      yield();
+      if (clockifyTimers[i].desiredState == TIMER_STARTING && clockifyTimers[i].state == TIMER_CHECKING) {
+        if (!checkTimer(i)) {
+          apiFailures++;
+          #ifdef DEBUG
+          Serial.print("Reconciliation: Check timer failed. Fail count: "); Serial.println(apiFailures);
+          #endif
+        } else {
+          apiFailures = 0;
+          break;
+        }
+      }
+      
+      yield();
       if (clockifyTimers[i].desiredState == TIMER_STARTING && clockifyTimers[i].state == TIMER_PENDING) {
-        int elapsed = timeClient.getEpochTime() - clockifyTimers[i].start;
+        int elapsed = rtc.getEpoch() - clockifyTimers[i].start;
         if (elapsed >= 3) {
           clockifyTimers[i].desiredState = TIMER_RUNNING;
           clockifyTimers[i].state = TIMER_STARTING;
         }
       }
       
+      yield();
       if (clockifyTimers[i].desiredState == TIMER_RUNNING && clockifyTimers[i].state == TIMER_STARTING) {
-        displayProgress(2000, "Starting timer");
+        displayProgress(2500, "Starting timer");
         if (!startTimer(i)) {
           apiFailures++;
           #ifdef DEBUG
@@ -461,6 +482,7 @@ void reconciliateTimers(void * parameter) {
         }
       }
   
+      yield();
       if (clockifyTimers[i].desiredState == TIMER_STOPPED && clockifyTimers[i].state == TIMER_RUNNING) {
         if (!stopTimer(i)) {
           apiFailures++;
@@ -473,6 +495,7 @@ void reconciliateTimers(void * parameter) {
         }
       }
   
+      yield();
       if (clockifyTimers[i].desiredState == TIMER_STOPPED && clockifyTimers[i].state == TIMER_STOP_SENT) {
         if (!stopTimer(i)) {
           apiFailures++;
@@ -501,7 +524,7 @@ void reconciliateTimers(void * parameter) {
 }
 
 void getElapsedTime(char* out) {
-  int diff = timeClient.getEpochTime() - start;
+  int diff = rtc.getEpoch() - start;
   int hours = diff / 3600;
   diff -= hours * 3600;
   int minutes = diff / 60;
@@ -510,6 +533,10 @@ void getElapsedTime(char* out) {
 
 bool isPending() {
   for(int j = 0; j < MAX_CLOCKIFY_TIMERS; j++) {
+    if (clockifyTimers[j].state == TIMER_CHECKING) {
+      return true;
+    }
+
     if (clockifyTimers[j].state == TIMER_PENDING) {
       return true;
     }
@@ -621,7 +648,6 @@ void setup() {
   SPI.begin();
   mfrc522.PCD_Init();
   initConfig();
-  initNtp();
   if (errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY == xTaskCreatePinnedToCore(reconciliateTimers, "reconciliation", 50000, NULL, 0, NULL, 1)) {
     Serial.println("Could not create reconciliation thread, sleeping forever...");
     while(true) {
@@ -648,22 +674,21 @@ void setup() {
 
 void loop() {
   handleConfig();
-  handleNTP();
-  if (isNTPReady()) {
-    if (booting) {
-      cancelProgress();
-      idleFromTime = millis();
-      persistTime();
-    }
-    if (wifiReboot) {
-      #ifdef DEBUG
-      Serial.println("Rebooting after WiFi config to ensure mDNS hostname");
-      #endif
-      ESP.restart();
-    }
-    booting = false;
-    handleLogic();
+  yield();
+  if (booting) {
+    cancelProgress();
+    idleFromTime = millis();
+    persistTime();
   }
-
-  delay(100);
+  if (wifiReboot) {
+    #ifdef DEBUG
+    Serial.println("Rebooting after WiFi config to ensure mDNS hostname");
+    #endif
+    ESP.restart();
+  }
+  booting = false;
+  handleLogic();
+  yield();
+  delay(1);
+  yield();
 }

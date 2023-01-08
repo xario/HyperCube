@@ -13,7 +13,7 @@ with open(inPath, 'rb') as fh:
     fs.context.buffer = bytearray(fh.read())
 fs.mount()
 rootListing = fs.listdir('/')
-for fileName in ["time.bin", "wifi_cred.dat", "timers.bin", "data.json"]:
+for fileName in ["time.bin", "wifi_cred.dat", "timers.bin", "data.json", "name"]:
     if fileName in rootListing:
         with fs.open('/' + fileName, 'rb') as fh:
             data = fh.read()

@@ -30,19 +30,19 @@ RUN git clone --depth 1 --branch v2.0.0 https://github.com/fbiego/ESP32Time.git 
 RUN git clone --depth 1 https://github.com/DIYDave/HTTP-DateTime.git /root/Arduino/libraries/HTTP-DateTime-master
 
 RUN apk add --update nodejs-current yarn
-COPY React/*.json ./root/React/*.lock /root/React/
-ENV PATH /root/React/node_modules/.bin:$PATH
-WORKDIR /root/React/
+#COPY React/*.json ./root/React/*.lock /root/React/
+#ENV PATH /root/React/node_modules/.bin:$PATH
+#WORKDIR /root/React/
 RUN yarn install --silent
 
 COPY dump /root/dump
 WORKDIR /root/dump
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY React/public /root/React/public
-COPY React/src /root/React/src
-WORKDIR /root/React/
-RUN yarn run build
+#COPY React/public /root/React/public
+#COPY React/src /root/React/src
+#WORKDIR /root/React/
+#RUN yarn run build
 
 COPY Arduino/hypercube /root/Arduino/hypercube
 

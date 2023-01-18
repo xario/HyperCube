@@ -33,7 +33,7 @@ RUN apk add --update nodejs-current yarn
 #COPY React/*.json ./root/React/*.lock /root/React/
 #ENV PATH /root/React/node_modules/.bin:$PATH
 #WORKDIR /root/React/
-RUN yarn install --silent
+#RUN yarn install --silent
 
 COPY dump /root/dump
 WORKDIR /root/dump

@@ -14,7 +14,7 @@ jobs:
   
     defaults:
       run:
-        working-directory: "/home/runner/react"
+        working-directory: "/home/runner/work/HyperCube/HyperCube/react"
 
     runs-on: ubuntu-latest
 

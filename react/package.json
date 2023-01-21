@@ -1,5 +1,6 @@
 {
-  "name": "create-react-app-with-typescript",
+  "homepage": "https://xario.github.io/hypercube",
+  "name": "hypercube",
   "version": "5.0.0",
   "private": true,
   "dependencies": {

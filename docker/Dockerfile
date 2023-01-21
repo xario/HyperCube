@@ -1,8 +1,8 @@
-FROM alpine:3.16.2
+FROM alpine:3.14
 
 RUN mkdir /src
-RUN apk add --update git vim python3 py3-pip curl unzip bash libc6-compat libstdc++ gcompat screen
-RUN pip3 install pyserial
+RUN apk add --update git vim python3 py3-pip gcc g++ python3-dev curl unzip bash libc6-compat libstdc++ gcompat screen
+RUN pip3 install pyserial cython wheel
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
 RUN curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=/usr/local/bin sh
@@ -29,35 +29,47 @@ RUN git clone --depth 1 --branch 2.3.5 https://github.com/Links2004/arduinoWebSo
 RUN git clone --depth 1 --branch v2.0.0 https://github.com/fbiego/ESP32Time.git /root/Arduino/libraries/ESP32Time-main
 RUN git clone --depth 1 https://github.com/DIYDave/HTTP-DateTime.git /root/Arduino/libraries/HTTP-DateTime-master
 
-RUN apk add --update nodejs-current yarn
+ENV NVM_DIR /usr/local/nvm
+ENV NODE_VERSION 16.14.0
+RUN mkdir -p ${NVM_DIR} \
+    && curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash \
+    && export NVM_DIR="/usr/local/nvm" \
+    && sh "$NVM_DIR/nvm.sh" \
+    && source $NVM_DIR/nvm.sh \
+    && nvm install $NODE_VERSION \
+    && nvm alias default $NODE_VERSION \
+    && nvm use default
+
+RUN apk add --update yarn
 COPY React/*.json ./root/React/*.lock /root/React/
 ENV PATH /root/React/node_modules/.bin:$PATH
 WORKDIR /root/React/
-RUN yarn install --silent
+RUN yarn install --silent --frozen-lockfile
 
 COPY dump /root/dump
 WORKDIR /root/dump
-RUN pip install --no-cache-dir -r requirements.txt
+
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY React/public /root/React/public
 COPY React/src /root/React/src
 WORKDIR /root/React/
-RUN yarn run build
+# RUN yarn run build
 
-COPY Arduino/hypercube /root/Arduino/hypercube
+# COPY Arduino/hypercube /root/Arduino/hypercube
 
-COPY build-and-upload.sh /root/build-and-upload.sh
-RUN chmod +x /root/build-and-upload.sh
+# COPY build-and-upload.sh /root/build-and-upload.sh
+# RUN chmod +x /root/build-and-upload.sh
 
-COPY monitor.sh /root/monitor.sh
-RUN chmod +x /root/monitor.sh
+# COPY monitor.sh /root/monitor.sh
+# RUN chmod +x /root/monitor.sh
 
-COPY backup.sh /root/backup.sh
-RUN chmod +x /root/backup.sh
+# COPY backup.sh /root/backup.sh
+# RUN chmod +x /root/backup.sh
 
-COPY restore.sh /root/restore.sh
-RUN chmod +x /root/restore.sh
+# COPY restore.sh /root/restore.sh
+# RUN chmod +x /root/restore.sh
 
-WORKDIR /root
+# WORKDIR /root
 
-CMD ["bash", "/root/build-and-upload.sh"]
+# CMD ["bash", "/root/build-and-upload.sh"]

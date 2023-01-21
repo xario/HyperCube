@@ -9,9 +9,6 @@ on:
   pull_request:
     branches: [ "master" ]
 
-env:
-  NODE_OPTIONS: --openssl-legacy-provider
-
 jobs:
   build:
   
@@ -23,7 +20,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [14.x, 16.x, 18.x]
+        node-version: [18.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
@@ -36,3 +33,14 @@ jobs:
         cache: 'npm'
     - run: yarn install
     - run: yarn run build --if-present
+    - name: Deploy
+      run: |
+        git config --global user.name $user_name
+        git config --global user.email $user_email
+        git remote set-url origin https://${github_token}@github.com/${repository}
+        yarn run deploy
+      env:
+        user_name: 'github-actions[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'
+        github_token: ${{ secrets.ACTIONS_DEPLOY_ACCESS_TOKEN }}
+        repository: ${{ github.repository }}

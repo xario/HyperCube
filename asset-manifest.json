@@ -1,17 +1,17 @@
 {
   "files": {
-    "main.js": "/hypercube/static/js/main.0fbc99ca.chunk.js",
-    "main.js.map": "/hypercube/static/js/main.0fbc99ca.chunk.js.map",
-    "runtime-main.js": "/hypercube/static/js/runtime-main.225218c2.js",
-    "runtime-main.js.map": "/hypercube/static/js/runtime-main.225218c2.js.map",
-    "static/js/2.644ab86e.chunk.js": "/hypercube/static/js/2.644ab86e.chunk.js",
-    "static/js/2.644ab86e.chunk.js.map": "/hypercube/static/js/2.644ab86e.chunk.js.map",
-    "index.html": "/hypercube/index.html",
-    "static/js/2.644ab86e.chunk.js.LICENSE.txt": "/hypercube/static/js/2.644ab86e.chunk.js.LICENSE.txt"
+    "main.js": "/HyperCube/static/js/main.8f59df71.chunk.js",
+    "main.js.map": "/HyperCube/static/js/main.8f59df71.chunk.js.map",
+    "runtime-main.js": "/HyperCube/static/js/runtime-main.5f8f6540.js",
+    "runtime-main.js.map": "/HyperCube/static/js/runtime-main.5f8f6540.js.map",
+    "static/js/2.5dcde771.chunk.js": "/HyperCube/static/js/2.5dcde771.chunk.js",
+    "static/js/2.5dcde771.chunk.js.map": "/HyperCube/static/js/2.5dcde771.chunk.js.map",
+    "index.html": "/HyperCube/index.html",
+    "static/js/2.5dcde771.chunk.js.LICENSE.txt": "/HyperCube/static/js/2.5dcde771.chunk.js.LICENSE.txt"
   },
   "entrypoints": [
-    "static/js/runtime-main.225218c2.js",
-    "static/js/2.644ab86e.chunk.js",
-    "static/js/main.0fbc99ca.chunk.js"
+    "static/js/runtime-main.5f8f6540.js",
+    "static/js/2.5dcde771.chunk.js",
+    "static/js/main.8f59df71.chunk.js"
   ]
 }

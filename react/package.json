@@ -1,6 +1,6 @@
 {
-  "homepage": "https://xario.github.io/hypercube",
-  "name": "hypercube",
+  "homepage": "https://xario.github.io/HyperCube",
+  "name": "HyperCube",
   "version": "5.0.0",
   "private": true,
   "dependencies": {
